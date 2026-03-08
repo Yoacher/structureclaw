@@ -42,10 +42,15 @@
   - `GET /health`
 - 结构分析接口：
   - `POST /analyze`（`static/dynamic/seismic/nonlinear`）
+  - 统一分析响应 envelope：`schema_version/analysis_type/success/error_code/data/meta`
 - 规范与设计接口：
   - `POST /code-check`
   - `POST /design/beam`
   - `POST /design/column`
+- 数据标准化接口：
+  - `GET /schema/structure-model-v1`
+  - `POST /validate`
+  - `POST /convert`（当前支持目标版本 `1.0.0`）
 - 现有数据模型雏形：`Node/Element/Material/Section/StructuralModel`
 
 ### 2.4 前端
@@ -58,6 +63,8 @@
 - 目前仍是“可运行骨架 + 最小实现”，非完整工程计算平台
 - 统一结构数据标准尚未正式固化（版本化/迁移机制待建）
 - 分析/校核结果的工程级准确性、覆盖面、可追溯性仍需系统建设
+- 样例回归已落地 20 个 `StructureModel v1` 基础样例，并接入本地校验脚本
+- `POST /analyze` 已增加响应契约回归检查（固定字段与错误码）
 
 ---
 
@@ -179,4 +186,3 @@
 2. 在 `core` 落地 `schema_version` + `POST /validate`
 3. 为 `POST /analyze` 定义统一响应结构（含元数据与错误码）
 4. 建立首批 10 个基础算例作为回归基线
-

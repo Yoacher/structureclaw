@@ -3,9 +3,10 @@ StructureClaw Core - 结构分析引擎
 基于 OpenSees 和 Pynite 的有限元分析引擎
 """
 
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 from typing import List, Dict, Any, Optional
 import uvicorn
 import logging
@@ -16,6 +17,7 @@ from fem.seismic_analysis import SeismicAnalyzer
 from design.concrete import ConcreteDesigner
 from design.steel import SteelDesigner
 from design.code_check import CodeChecker
+from schemas.structure_model_v1 import StructureModelV1
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -39,45 +41,6 @@ app.add_middleware(
 
 # ============ 数据模型 ============
 
-class Node(BaseModel):
-    id: str
-    x: float
-    y: float
-    z: float
-    restraints: Optional[List[bool]] = None  # [ux, uy, uz, rx, ry, rz]
-
-
-class Element(BaseModel):
-    id: str
-    type: str  # beam, truss, shell, solid
-    nodes: List[str]
-    material: str
-    section: str
-
-
-class Material(BaseModel):
-    id: str
-    name: str
-    E: float  # 弹性模量 (MPa)
-    nu: float  # 泊松比
-    rho: float  # 密度 (kg/m³)
-    fy: Optional[float] = None  # 屈服强度 (MPa)
-
-
-class Section(BaseModel):
-    id: str
-    name: str
-    type: str
-    properties: Dict[str, Any]
-
-
-class StructuralModel(BaseModel):
-    nodes: List[Node]
-    elements: List[Element]
-    materials: List[Material]
-    sections: List[Section]
-
-
 class LoadCase(BaseModel):
     name: str
     type: str  # dead, live, wind, seismic
@@ -86,8 +49,27 @@ class LoadCase(BaseModel):
 
 class AnalysisRequest(BaseModel):
     type: str  # static, dynamic, seismic, nonlinear
-    model: StructuralModel
+    model: StructureModelV1
     parameters: Dict[str, Any]
+
+
+class ValidateRequest(BaseModel):
+    model: Dict[str, Any]
+
+
+class ConvertRequest(BaseModel):
+    model: Dict[str, Any]
+    target_schema_version: str = "1.0.0"
+
+
+class AnalysisResponse(BaseModel):
+    schema_version: str
+    analysis_type: str
+    success: bool
+    error_code: Optional[str] = None
+    message: str
+    data: Dict[str, Any]
+    meta: Dict[str, Any]
 
 
 class CodeCheckRequest(BaseModel):
@@ -116,8 +98,75 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/schema/structure-model-v1")
+async def structure_model_schema():
+    """返回 StructureModel v1 JSON Schema"""
+    return StructureModelV1.model_json_schema()
+
+
+@app.post("/validate")
+async def validate_structure_model(request: ValidateRequest):
+    """校验结构模型并返回标准化摘要"""
+    try:
+        model = StructureModelV1.model_validate(request.model)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "valid": False,
+                "errors": e.errors(),
+            },
+        )
+
+    return {
+        "valid": True,
+        "schemaVersion": model.schema_version,
+        "stats": {
+            "nodes": len(model.nodes),
+            "elements": len(model.elements),
+            "materials": len(model.materials),
+            "sections": len(model.sections),
+            "loadCases": len(model.load_cases),
+            "loadCombinations": len(model.load_combinations),
+        },
+    }
+
+
+@app.post("/convert")
+async def convert_structure_model(request: ConvertRequest):
+    """标准化并转换结构模型（当前支持 v1.0.0）"""
+    if request.target_schema_version != "1.0.0":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "errorCode": "UNSUPPORTED_TARGET_SCHEMA",
+                "message": f"target_schema_version '{request.target_schema_version}' is not supported",
+            },
+        )
+
+    try:
+        model = StructureModelV1.model_validate(request.model)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "errorCode": "INVALID_STRUCTURE_MODEL",
+                "message": "Input model failed StructureModel v1 validation",
+                "errors": e.errors(),
+            },
+        )
+
+    normalized = model.model_dump(mode="json")
+    normalized["schema_version"] = request.target_schema_version
+    return {
+        "sourceSchemaVersion": model.schema_version,
+        "targetSchemaVersion": request.target_schema_version,
+        "model": normalized,
+    }
+
+
 @app.post("/analyze")
-async def analyze(request: AnalysisRequest):
+async def analyze(request: AnalysisRequest) -> AnalysisResponse:
     """
     执行结构分析
     """
@@ -141,14 +190,47 @@ async def analyze(request: AnalysisRequest):
             result = analyzer.run_nonlinear(request.parameters)
 
         else:
-            raise HTTPException(status_code=400, detail=f"Unknown analysis type: {request.type}")
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "errorCode": "INVALID_ANALYSIS_TYPE",
+                    "message": f"Unknown analysis type: {request.type}",
+                },
+            )
 
         logger.info(f"Analysis completed successfully")
-        return result
+        now = datetime.now(timezone.utc).isoformat()
+        return AnalysisResponse(
+            schema_version=request.model.schema_version,
+            analysis_type=request.type,
+            success=True,
+            error_code=None,
+            message="Analysis completed",
+            data=result,
+            meta={
+                "engineVersion": app.version,
+                "timestamp": now,
+            },
+        )
+
+    except HTTPException:
+        raise
 
     except Exception as e:
         logger.error(f"Analysis failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        now = datetime.now(timezone.utc).isoformat()
+        return AnalysisResponse(
+            schema_version=request.model.schema_version,
+            analysis_type=request.type,
+            success=False,
+            error_code="ANALYSIS_EXECUTION_FAILED",
+            message=str(e),
+            data={},
+            meta={
+                "engineVersion": app.version,
+                "timestamp": now,
+            },
+        )
 
 
 @app.post("/code-check")

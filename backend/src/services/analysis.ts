@@ -116,6 +116,7 @@ export class AnalysisService {
       const response = await axios.post(`${this.engineUrl}/analyze`, {
         type: analysis.type,
         model: {
+          schema_version: '1.0.0',
           nodes: analysis.model.nodes,
           elements: analysis.model.elements,
           materials: analysis.model.materials,
@@ -127,6 +128,11 @@ export class AnalysisService {
       });
 
       const results = response.data;
+      if (results && results.success === false) {
+        const errorCode = results.error_code || 'ANALYSIS_EXECUTION_FAILED';
+        const message = results.message || 'Analysis execution failed';
+        throw new Error(`[${errorCode}] ${message}`);
+      }
 
       // 保存结果
       const updatedAnalysis = await prisma.analysis.update({
@@ -134,7 +140,7 @@ export class AnalysisService {
         data: {
           status: 'completed',
           completedAt: new Date(),
-          results: results,
+          results,
         },
       });
 
