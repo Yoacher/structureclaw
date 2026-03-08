@@ -7,6 +7,7 @@ RUNTIME_DIR="$ROOT_DIR/.runtime"
 LOG_DIR="$RUNTIME_DIR/logs"
 PID_DIR="$RUNTIME_DIR/pids"
 CORE_PROFILE="lite"
+CORE_ENV_MANAGER="auto"
 SKIP_INFRA=0
 SKIP_DB_INIT=0
 
@@ -17,6 +18,7 @@ Usage: ./scripts/dev-up.sh [lite|full] [--skip-infra] [--skip-db-init]
 Options:
   lite            Start core with lightweight Python dependencies (default)
   full            Start core with full Python dependencies
+  --uv            Create core/.venv with uv-managed Python 3.11
   --skip-infra    Do not start postgres/redis via docker compose
   --skip-db-init  Skip Prisma migrate+seed
 EOF
@@ -26,6 +28,9 @@ for arg in "$@"; do
   case "$arg" in
     lite|full)
       CORE_PROFILE="$arg"
+      ;;
+    --uv)
+      CORE_ENV_MANAGER="uv"
       ;;
     --skip-infra)
       SKIP_INFRA=1
@@ -95,6 +100,10 @@ require_command() {
   fi
 }
 
+has_command() {
+  command -v "$1" >/dev/null 2>&1
+}
+
 docker_ready() {
   docker info >/dev/null 2>&1
 }
@@ -121,6 +130,10 @@ require_command "node" "Install Node.js 18+ and retry."
 require_command "npm" "Install npm and retry."
 require_command "python" "Install Python 3.10+ and retry."
 
+if [[ "$CORE_ENV_MANAGER" == "uv" ]]; then
+  require_command "uv" "Install uv and retry, or rerun without --uv."
+fi
+
 if [[ ! -d "$ROOT_DIR/backend/node_modules" || ! -d "$ROOT_DIR/frontend/node_modules" ]]; then
   echo "Installing frontend/backend dependencies..."
   npm ci --prefix "$ROOT_DIR/backend"
@@ -129,10 +142,27 @@ fi
 
 if [[ ! -x "$ROOT_DIR/core/.venv/bin/python" ]]; then
   echo "Creating Python virtual environment for core ($CORE_PROFILE)..."
-  if [[ "$CORE_PROFILE" == "full" ]]; then
-    make -C "$ROOT_DIR" setup-core-full
+  if [[ "$CORE_ENV_MANAGER" == "uv" ]]; then
+    if [[ "$CORE_PROFILE" == "full" ]]; then
+      make -C "$ROOT_DIR" setup-core-full-uv
+    else
+      make -C "$ROOT_DIR" setup-core-lite-uv
+    fi
   else
-    make -C "$ROOT_DIR" setup-core-lite
+    if has_command "uv"; then
+      echo "uv detected; using Python 3.11 managed by uv."
+      if [[ "$CORE_PROFILE" == "full" ]]; then
+        make -C "$ROOT_DIR" setup-core-full-uv
+      else
+        make -C "$ROOT_DIR" setup-core-lite-uv
+      fi
+    else
+      if [[ "$CORE_PROFILE" == "full" ]]; then
+        make -C "$ROOT_DIR" setup-core-full
+      else
+        make -C "$ROOT_DIR" setup-core-lite
+      fi
+    fi
   fi
 fi
 

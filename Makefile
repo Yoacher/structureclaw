@@ -1,12 +1,17 @@
 SHELL := /bin/bash
+UV_CACHE_DIR ?= /tmp/uv-cache
+UV_PYTHON_INSTALL_DIR ?= /tmp/uv-python
+CORE_PYTHON_VERSION ?= 3.11
 
-.PHONY: help install setup-core-lite setup-core-full dev-backend dev-frontend dev-core-lite dev-core-full build db-up db-down db-init docker-up docker-down local-up local-up-full local-up-noinfra local-down local-status health up
+.PHONY: help install setup-core-lite setup-core-full setup-core-lite-uv setup-core-full-uv dev-backend dev-frontend dev-core-lite dev-core-full build db-up db-down db-init docker-up docker-down local-up local-up-full local-up-uv local-up-full-uv local-up-noinfra local-down local-status health check-startup up
 
 help:
 	@echo "Available targets:"
 	@echo "  install         Install frontend and backend npm dependencies"
 	@echo "  setup-core-lite Create core .venv with lightweight dependencies"
 	@echo "  setup-core-full Create core .venv with full dependencies"
+	@echo "  setup-core-lite-uv Create core .venv with uv + Python $(CORE_PYTHON_VERSION) (lite deps)"
+	@echo "  setup-core-full-uv Create core .venv with uv + Python $(CORE_PYTHON_VERSION) (full deps)"
 	@echo "  dev-backend     Start backend in watch mode"
 	@echo "  dev-frontend    Start frontend in dev mode"
 	@echo "  dev-core-lite   Start analysis engine with lightweight deps"
@@ -19,10 +24,13 @@ help:
 	@echo "  docker-down     Stop full docker compose stack"
 	@echo "  local-up        One-command local startup (lite core profile)"
 	@echo "  local-up-full   One-command local startup (full core profile)"
+	@echo "  local-up-uv     One-command local startup using uv-managed Python $(CORE_PYTHON_VERSION)"
+	@echo "  local-up-full-uv One-command local startup (full core) using uv-managed Python $(CORE_PYTHON_VERSION)"
 	@echo "  local-up-noinfra Start local app stack without starting postgres/redis docker containers"
 	@echo "  local-down      Stop local app processes and infra"
 	@echo "  local-status    Show local app process/health status"
 	@echo "  health          Check local service health endpoints"
+	@echo "  check-startup   Run local startup checks without launching the full stack"
 	@echo "  up              Alias of docker-up"
 
 install:
@@ -36,6 +44,14 @@ setup-core-lite:
 setup-core-full:
 	python -m venv core/.venv
 	core/.venv/bin/pip install -r core/requirements.txt
+
+setup-core-lite-uv:
+	UV_CACHE_DIR=$(UV_CACHE_DIR) UV_PYTHON_INSTALL_DIR=$(UV_PYTHON_INSTALL_DIR) uv venv --python $(CORE_PYTHON_VERSION) core/.venv
+	UV_CACHE_DIR=$(UV_CACHE_DIR) UV_PYTHON_INSTALL_DIR=$(UV_PYTHON_INSTALL_DIR) uv pip install --python core/.venv/bin/python --link-mode=copy -r core/requirements-lite.txt
+
+setup-core-full-uv:
+	UV_CACHE_DIR=$(UV_CACHE_DIR) UV_PYTHON_INSTALL_DIR=$(UV_PYTHON_INSTALL_DIR) uv venv --python $(CORE_PYTHON_VERSION) core/.venv
+	UV_CACHE_DIR=$(UV_CACHE_DIR) UV_PYTHON_INSTALL_DIR=$(UV_PYTHON_INSTALL_DIR) uv pip install --python core/.venv/bin/python --link-mode=copy -r core/requirements.txt
 
 dev-backend:
 	npm run dev --prefix backend
@@ -74,6 +90,12 @@ local-up:
 local-up-full:
 	./scripts/dev-up.sh full
 
+local-up-uv:
+	./scripts/dev-up.sh lite --uv
+
+local-up-full-uv:
+	./scripts/dev-up.sh full --uv
+
 local-up-noinfra:
 	./scripts/dev-up.sh lite --skip-infra
 
@@ -87,5 +109,8 @@ health:
 	curl http://localhost:8000/health
 	curl http://localhost:8001/health
 	curl -I http://localhost:3000
+
+check-startup:
+	./scripts/check-startup.sh
 
 up: docker-up

@@ -180,7 +180,7 @@ export class SkillService {
   }
 
   // 安装技能
-  async installSkill(skillId: string, projectId: string, userId?: string) {
+  async installSkill(skillId: string, projectId: string, _userId?: string) {
     // 检查是否已安装
     const existing = await prisma.projectSkill.findFirst({
       where: { skillId, projectId },
@@ -294,8 +294,7 @@ export class SkillService {
   // 梁设计处理器
   private async handleBeamDesign(params: any) {
     // 简化的梁截面设计计算
-    const { M, b, h, concreteGrade } = params;
-    const fcd = this.getConcreteStrength(concreteGrade);
+    const { M, h } = params;
     const h0 = h - 40; // 假设保护层厚度40mm
 
     // 简化计算：As = M / (fy * γs * h0)
@@ -355,7 +354,7 @@ export class SkillService {
 
   // 地震作用计算处理器
   private async handleSeismicLoad(params: any) {
-    const { totalWeight, seismicZone, siteClass, dampingRatio } = params;
+    const { totalWeight, seismicZone, siteClass } = params;
 
     // 简化的底部剪力法
     const αmax = [0.04, 0.08, 0.16, 0.24, 0.32][seismicZone - 6] || 0.16;

@@ -5,7 +5,7 @@ StructureClaw Core - 结构分析引擎
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Any, Optional
 import uvicorn
 import logging
@@ -91,6 +91,8 @@ class AnalysisRequest(BaseModel):
 
 
 class CodeCheckRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     model_id: str
     code: str  # GB50010, GB50017, etc.
     elements: List[str]
