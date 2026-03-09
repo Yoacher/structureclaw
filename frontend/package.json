@@ -7,7 +7,9 @@
     "build": "NODE_OPTIONS='--require ./scripts/fs-rename-fallback.cjs' next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@react-three/drei": "^9.99.7",
