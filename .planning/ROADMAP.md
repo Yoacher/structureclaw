@@ -108,16 +108,16 @@ Plans:
   7. User can view artifacts list and debug output (raw JSON, stream frames)
   8. User receives clear error messages and clarification prompts when applicable
   9. User can see report summary after successful execution
-**Plans**: TBD
+**Plans**: 7 plans in 6 waves
 
 Plans:
-- [ ] 05-00: Wave 0 - Test infrastructure and shadcn/ui components
-- [ ] 05-01: Console input controls (endpoint, mode, message, model JSON)
-- [ ] 05-02: Configuration panel and execution hook (CONS-05, CONS-06, CONS-07, CONS-12)
-- [ ] 05-03: Result display (CONS-08, CONS-09, CONS-10, CONS-17)
-- [ ] 05-04: Artifacts and debug output (CONS-11, CONS-14)
-- [ ] 05-05: Status indicator and console page (CONS-13)
-- [ ] 05-06: Error states and clarification prompts (CONS-15, CONS-16)
+- [ ] 05-00: Wave 0 - Test infrastructure and shadcn/ui components (Wave 0)
+- [ ] 05-01: Console input controls (endpoint, mode, message, model JSON) (Wave 1)
+- [ ] 05-02: Configuration panel and execution hook (CONS-05, CONS-06, CONS-07, CONS-12) (Wave 2)
+- [ ] 05-03: Result display (CONS-08, CONS-09, CONS-10, CONS-17) (Wave 3)
+- [ ] 05-04: Artifacts and debug output (CONS-11, CONS-14) (Wave 3)
+- [ ] 05-05: Status indicator and console page (CONS-13) (Wave 4)
+- [ ] 05-06: Error states and clarification prompts (CONS-15, CONS-16) (Wave 5)
 
 ### Phase 6: Pages & Accessibility
 **Goal**: Complete the application with polished pages and validated accessibility
