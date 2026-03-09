@@ -172,3 +172,52 @@ describe('ConsolePage Integration (CONS-13)', () => {
     expect(screen.getByText('Idle')).toBeInTheDocument()
   })
 })
+
+describe('Accessibility - Semantic Structure (PAGE-02)', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockExecuteSync.mockReset().mockResolvedValue({ success: true })
+    mockExecuteStream.mockReset().mockResolvedValue({ success: true })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const renderConsolePage = (initialState: Partial<StoreState> = {}) => {
+    return render(
+      createElement(
+        AppStoreProvider,
+        { initialState: createInitialState(initialState) as StoreState },
+        createElement(ConsolePage)
+      )
+    )
+  }
+
+  it('has main landmark with aria-label', () => {
+    renderConsolePage()
+    const main = screen.getByRole('main')
+    expect(main).toBeInTheDocument()
+    expect(main).toHaveAttribute('aria-label', 'Agent Console')
+  })
+
+  it('has section with aria-label for input controls', () => {
+    renderConsolePage()
+    const inputSection = screen.getByLabelText('Input Controls')
+    expect(inputSection).toBeInTheDocument()
+    expect(inputSection.tagName.toLowerCase()).toBe('section')
+  })
+
+  it('has section with aria-label for results', () => {
+    renderConsolePage()
+    const resultsSection = screen.getByLabelText('Results')
+    expect(resultsSection).toBeInTheDocument()
+    expect(resultsSection.tagName.toLowerCase()).toBe('section')
+  })
+
+  it('results section has aria-live for dynamic content announcements', () => {
+    renderConsolePage()
+    const resultsSection = screen.getByLabelText('Results')
+    expect(resultsSection).toHaveAttribute('aria-live', 'polite')
+  })
+})
