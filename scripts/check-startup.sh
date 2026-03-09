@@ -56,6 +56,7 @@ if [[ -n "$CORE_PYTHON" ]]; then
   run_check "Core analyze response contract" "./scripts/validate-analyze-contract.sh"
   run_check "Core code-check traceability" "./scripts/validate-code-check-traceability.sh"
   run_check "Core static regression" "./scripts/validate-static-regression.sh"
+  run_check "Core static 3D regression" "./scripts/validate-static-3d-regression.sh"
   run_check "Core schema examples validation" "./scripts/validate-structure-examples.sh"
   run_check "Core convert round-trip" "./scripts/validate-convert-roundtrip.sh"
   run_check "Core schema migration" "./scripts/validate-schema-migration.sh"

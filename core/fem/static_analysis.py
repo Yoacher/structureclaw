@@ -157,6 +157,14 @@ class StaticAnalyzer:
             except Exception as e:
                 logger.warning(f"2D frame solver failed, trying truss/zero fallback: {e}")
 
+        if self._can_run_3d_truss_solver() and self._requires_3d_truss_solver():
+            try:
+                if batch_cases:
+                    return self._run_batch_cases(parameters, self._run_linear_3d_truss)
+                return self._run_linear_3d_truss(parameters)
+            except Exception as e:
+                logger.warning(f"3D truss solver failed, trying 2D/zero fallback: {e}")
+
         if self._can_run_2d_truss_solver():
             try:
                 if batch_cases:
@@ -353,6 +361,166 @@ class StaticAnalyzer:
         if not self.model.elements:
             return False
         return all(elem.type == 'beam' for elem in self.model.elements)
+
+    def _can_run_3d_truss_solver(self) -> bool:
+        """判断是否可用内置 3D truss 求解器。"""
+        if not self.model.elements:
+            return False
+        return all(elem.type == 'truss' for elem in self.model.elements)
+
+    def _requires_3d_truss_solver(self) -> bool:
+        """
+        判断当前 truss 模型是否需要 3D 求解路径。
+        规则：任一节点 y 坐标非零即触发 3D。
+        """
+        for node in self.model.nodes:
+            if abs(float(node.y)) > 1e-12:
+                return True
+        return False
+
+    def _run_linear_3d_truss(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        3D truss 线弹性静力分析（DOF: ux, uy, uz）。
+        """
+        node_order = sorted(self.model.nodes, key=lambda n: n.id)
+        node_index = {node.id: idx for idx, node in enumerate(node_order)}
+        dof_count = len(node_order) * 3
+
+        K = np.zeros((dof_count, dof_count), dtype=float)
+        F = np.zeros(dof_count, dtype=float)
+
+        for elem in self.model.elements:
+            n1 = self.nodes[elem.nodes[0]]
+            n2 = self.nodes[elem.nodes[1]]
+            mat = self.materials[elem.material]
+            sec = self.sections[elem.section]
+
+            x1, y1, z1 = n1.x, n1.y, n1.z
+            x2, y2, z2 = n2.x, n2.y, n2.z
+            dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
+            L = float(np.sqrt(dx * dx + dy * dy + dz * dz))
+            if L <= 0.0:
+                raise ValueError(f"Element '{elem.id}' has zero length")
+
+            A = float(sec.properties.get('A', 0.0))
+            if A <= 0.0:
+                raise ValueError(f"Element '{elem.id}' requires section area A > 0")
+
+            E = float(mat.E)
+            l = dx / L
+            m = dy / L
+            n = dz / L
+            k = (A * E) / L
+
+            ke = k * np.array(
+                [
+                    [l * l, l * m, l * n, -l * l, -l * m, -l * n],
+                    [l * m, m * m, m * n, -l * m, -m * m, -m * n],
+                    [l * n, m * n, n * n, -l * n, -m * n, -n * n],
+                    [-l * l, -l * m, -l * n, l * l, l * m, l * n],
+                    [-l * m, -m * m, -m * n, l * m, m * m, m * n],
+                    [-l * n, -m * n, -n * n, l * n, m * n, n * n],
+                ],
+                dtype=float,
+            )
+
+            i = node_index[n1.id] * 3
+            j = node_index[n2.id] * 3
+            dofs = [i, i + 1, i + 2, j, j + 1, j + 2]
+            for r in range(6):
+                for c_idx in range(6):
+                    K[dofs[r], dofs[c_idx]] += ke[r, c_idx]
+
+        for load in self._collect_nodal_loads(parameters):
+            node_id = str(load.get('node', ''))
+            if node_id not in node_index:
+                continue
+            i = node_index[node_id] * 3
+            F[i] += float(load.get('fx', 0.0))
+            F[i + 1] += float(load.get('fy', 0.0))
+            F[i + 2] += float(load.get('fz', 0.0))
+
+        fixed_dofs = set()
+        for node in node_order:
+            idx = node_index[node.id] * 3
+            restraints = node.restraints or [False] * 6
+            if restraints[0]:
+                fixed_dofs.add(idx)
+            if restraints[1]:
+                fixed_dofs.add(idx + 1)
+            if restraints[2]:
+                fixed_dofs.add(idx + 2)
+
+        free_dofs = [i for i in range(dof_count) if i not in fixed_dofs]
+        if not free_dofs:
+            raise ValueError("No free DOFs for solving")
+
+        Kff = K[np.ix_(free_dofs, free_dofs)]
+        Ff = F[free_dofs]
+        Uf = np.linalg.solve(Kff, Ff)
+
+        U = np.zeros(dof_count, dtype=float)
+        U[free_dofs] = Uf
+        R = K @ U - F
+
+        displacements = {}
+        for node in node_order:
+            i = node_index[node.id] * 3
+            displacements[node.id] = {
+                'ux': float(U[i]),
+                'uy': float(U[i + 1]),
+                'uz': float(U[i + 2]),
+                'rx': 0.0,
+                'ry': 0.0,
+                'rz': 0.0,
+            }
+
+        forces = {}
+        for elem in self.model.elements:
+            n1 = self.nodes[elem.nodes[0]]
+            n2 = self.nodes[elem.nodes[1]]
+            mat = self.materials[elem.material]
+            sec = self.sections[elem.section]
+            x1, y1, z1 = n1.x, n1.y, n1.z
+            x2, y2, z2 = n2.x, n2.y, n2.z
+            dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
+            L = float(np.sqrt(dx * dx + dy * dy + dz * dz))
+            A = float(sec.properties.get('A', 0.0))
+            E = float(mat.E)
+            l = dx / L
+            m = dy / L
+            n = dz / L
+
+            i = node_index[n1.id] * 3
+            j = node_index[n2.id] * 3
+            u1x, u1y, u1z = U[i], U[i + 1], U[i + 2]
+            u2x, u2y, u2z = U[j], U[j + 1], U[j + 2]
+            delta = l * (u2x - u1x) + m * (u2y - u1y) + n * (u2z - u1z)
+            axial_force = (A * E / L) * delta
+            forces[elem.id] = {
+                'axial': float(axial_force),
+                'stress': float(axial_force / A) if A > 0.0 else 0.0,
+            }
+
+        reactions = {}
+        for node in node_order:
+            i = node_index[node.id] * 3
+            if i in fixed_dofs or (i + 1) in fixed_dofs or (i + 2) in fixed_dofs:
+                reactions[node.id] = {
+                    'fx': float(R[i]),
+                    'fy': float(R[i + 1]),
+                    'fz': float(R[i + 2]),
+                }
+
+        return {
+            'status': 'success',
+            'analysisMode': 'linear_3d_truss',
+            'displacements': displacements,
+            'forces': forces,
+            'reactions': reactions,
+            'envelope': self._build_envelope(displacements, forces, reactions),
+            'summary': self._generate_summary(displacements, forces),
+        }
 
     def _run_linear_2d_truss(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """

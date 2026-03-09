@@ -19,6 +19,10 @@ echo "==> Static regression cases"
 ./scripts/validate-static-regression.sh
 
 echo
+echo "==> Static 3D regression cases"
+./scripts/validate-static-3d-regression.sh
+
+echo
 echo "==> StructureModel v1 examples"
 ./scripts/validate-structure-examples.sh
 
