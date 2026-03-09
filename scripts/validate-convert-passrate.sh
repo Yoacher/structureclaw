@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0, 'core')
 from main import ConvertRequest, convert_structure_model
 
-formats = ('simple-1', 'compact-1')
+formats = ('simple-1', 'compact-1', 'midas-text-1')
 samples = sorted(Path('core/schemas/examples').glob('model_*.json'))
 threshold = 0.95
 

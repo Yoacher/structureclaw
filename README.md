@@ -361,7 +361,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - `GET /`
 - `GET /health`
 - `GET /schema/converters`
-- `POST /convert`（支持 `structuremodel-v1`、`simple-1`、`compact-1`）
+- `POST /convert`（支持 `structuremodel-v1`、`simple-1`、`compact-1`、`midas-text-1`）
 - `POST /validate`
 - `POST /analyze`
 - `POST /code-check`

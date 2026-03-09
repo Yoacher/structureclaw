@@ -196,6 +196,14 @@ async def convert_structure_model(request: ConvertRequest):
                 "errors": e.errors(),
             },
         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "errorCode": "INVALID_STRUCTURE_MODEL",
+                "message": str(e),
+            },
+        )
 
     migrated = migrate_structure_model_v1(model.model_dump(mode="json"), request.target_schema_version)
     if request.target_format == "structuremodel-v1":

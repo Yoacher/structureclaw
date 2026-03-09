@@ -31,6 +31,10 @@ echo "==> Convert round-trip"
 ./scripts/validate-convert-roundtrip.sh
 
 echo
+echo "==> Midas-text converter"
+./scripts/validate-midas-text-converter.sh
+
+echo
 echo "==> Schema migration"
 ./scripts/validate-schema-migration.sh
 

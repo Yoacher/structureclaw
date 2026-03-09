@@ -68,7 +68,7 @@
   - `GET /schema/structure-model-v1`
   - `GET /schema/converters`（查询已支持转换格式）
   - `POST /validate`
-  - `POST /convert`（支持 `structuremodel-v1`、`simple-1`、`compact-1` 的导入/导出，目标版本当前 `1.0.x`）
+  - `POST /convert`（支持 `structuremodel-v1`、`simple-1`、`compact-1`、`midas-text-1` 的导入/导出，目标版本当前 `1.0.x`）
   - 已新增批量转换脚本与结构化报告：`scripts/convert-batch.py`
   - 已新增 `v1.x` 迁移骨架：支持 `target_schema_version=1.0.1` 并记录 `metadata.schema_migration`
 - 现有数据模型雏形：`Node/Element/Material/Section/StructuralModel`
@@ -90,6 +90,7 @@
 - 静力结果已补充包络字段：位移/轴力/剪力/弯矩/支座反力最大绝对值，并输出按节点/单元/工况的控制值
 - 已补充批量工况明细包络表：按节点位移、按单元内力、按节点反力的控制值与控制工况
 - 已接入格式转换 round-trip 回归：`structuremodel-v1 -> simple-1 -> structuremodel-v1`
+- 已接入 `midas-text-1` 转换器回归：导入/导出 + 字段级错误定位
 - 已接入 round-trip 通过率校验脚本：`scripts/validate-convert-passrate.sh`（阈值 95%）
 
 ---

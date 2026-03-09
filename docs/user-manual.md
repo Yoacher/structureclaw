@@ -172,6 +172,7 @@ make dev-core-lite
 - 支持节点力/均布荷载/组合/批量工况
 - 输出位移、内力、反力与控制包络
 - 支持转换 round-trip 与通过率校验
+- 格式转换已支持 `midas-text-1` 最小子集（节点/单元/材料/截面/节点荷载/组合）
 
 ### 5.5 业务模块 API（Backend）
 
@@ -327,4 +328,3 @@ make logs
 3. `make doctor` 通过  
 4. `POST /api/v1/agent/run` 能返回 `traceId + metrics`  
 5. `reportOutput=file` 能在 `uploads/reports` 看到产物  
-

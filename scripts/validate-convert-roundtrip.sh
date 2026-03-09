@@ -28,7 +28,7 @@ source = json.loads(sample_file.read_text(encoding='utf-8'))
 async def run() -> None:
     original = source
 
-    for external_format in ('simple-1', 'compact-1'):
+    for external_format in ('simple-1', 'compact-1', 'midas-text-1'):
         export_req = ConvertRequest(
             model=source,
             source_format='structuremodel-v1',
