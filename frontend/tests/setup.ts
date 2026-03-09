@@ -49,3 +49,29 @@ class MockResizeObserver {
   disconnect() {}
 }
 global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
+
+// Mock EventSource for SSE hook testing
+class MockEventSource {
+  url: string
+  readyState: number = EventSource.CONNECTING
+  onopen: ((this: EventSource, ev: Event) => any) | null = null
+  onmessage: ((this: EventSource, ev: MessageEvent) => any) | null = null
+  onerror: ((this: EventSource, ev: Event) => any) | null = null
+
+  constructor(url: string) {
+    this.url = url
+    // Simulate async connection establishment
+    setTimeout(() => {
+      this.readyState = EventSource.OPEN
+      this.onopen?.call(this as unknown as EventSource, new Event('open'))
+    }, 0)
+  }
+
+  close() {
+    this.readyState = EventSource.CLOSED
+  }
+
+  addEventListener() {}
+  removeEventListener() {}
+}
+global.EventSource = MockEventSource as unknown as typeof EventSource
