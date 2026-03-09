@@ -98,6 +98,9 @@ Recent decisions affecting current work:
 - [03-01]: Use shadcn/ui Sidebar with collapsible="icon" for desktop collapse
 - [03-01]: Add matchMedia and ResizeObserver mocks for jsdom test compatibility
 - [03-01]: Header displays context based on pathname (Agent Console on /console)
+- [03-03]: Use react-resizable-panels library for split panel layouts with Group/Panel/Separator exports
+- [03-03]: Map direction prop to orientation for react-resizable-panels API compatibility
+- [03-03]: SplitPanel uses minSize=30 to prevent panels from collapsing too much
 
 ### Pending Todos
 
@@ -109,8 +112,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-09T14:58:00Z
-Stopped at: Completed 03-01-PLAN.md (Responsive Sidebar and Header)
+Last session: 2026-03-09T15:00:09Z
+Stopped at: Completed 03-03-PLAN.md (Split Panel Layout Component)
 Resume file: None
 
 ---
