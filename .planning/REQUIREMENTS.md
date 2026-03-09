@@ -73,7 +73,7 @@ Frontend rewrite requirements, all implemented in v1.
 
 ### Accessibility
 
-- [ ] **ACCS-01**: Keyboard navigation support (Tab, Enter, Escape)
+- [x] **ACCS-01**: Keyboard navigation support (Tab, Enter, Escape)
 - [ ] **ACCS-02**: Focus management
 - [ ] **ACCS-03**: Semantic HTML
 - [ ] **ACCS-04**: ARIA labels
@@ -155,7 +155,7 @@ Which phase covers which requirement. Updated during roadmap creation.
 | CONS-17 | Phase 5 | Complete |
 | PAGE-01 | Phase 6 | Complete |
 | PAGE-02 | Phase 6 | Pending |
-| ACCS-01 | Phase 6 | Pending |
+| ACCS-01 | Phase 6 | Complete |
 | ACCS-02 | Phase 6 | Pending |
 | ACCS-03 | Phase 6 | Pending |
 | ACCS-04 | Phase 6 | Pending |
