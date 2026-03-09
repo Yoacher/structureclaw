@@ -52,14 +52,14 @@ Plans:
   4. Toast notifications appear at bottom-right and auto-dismiss after 4 seconds
   5. Command palette opens with Cmd/Ctrl+K and provides fuzzy search
   6. All components have smooth hover/click micro-interactions
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
 
 Plans:
 - [x] 02-00: Test stubs for component tests
 - [x] 02-01: Form components (Input, Textarea, Select, Badge, Skeleton)
-- [ ] 02-02: Container components (Card, Dialog)
-- [ ] 02-03: Feedback components (Toast)
-- [ ] 02-04: Command palette and micro-interactions
+- [x] 02-02: Container components (Card, Dialog)
+- [x] 02-03: Feedback components (Toast)
+- [x] 02-04: Command palette and micro-interactions
 
 ### Phase 3: Layout System
 **Goal**: Provide a responsive app shell that works across desktop and tablet viewports
@@ -71,12 +71,12 @@ Plans:
   3. Routes are grouped into marketing (public) and console (authenticated) sections
   4. All providers (theme, toast, etc.) are properly wrapped in root layout
   5. Split panel layout supports draggable resizing between content areas
-**Plans**: TBD
+**Plans**: 3 plans in 1 wave
 
 Plans:
-- [ ] 03-01: Responsive sidebar and header
-- [ ] 03-02: Route groups and root layout providers
-- [ ] 03-03: Split panel layout component
+- [ ] 03-01: Responsive sidebar and header (LAYT-01, LAYT-02)
+- [ ] 03-02: Route groups and root layout providers (LAYT-03, LAYT-04)
+- [ ] 03-03: Split panel layout component (LAYT-05)
 
 ### Phase 4: State & API Layer
 **Goal**: Establish a type-safe data layer that maintains API contract compliance
@@ -144,8 +144,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Design System Foundation | 6/6 | Complete | 2026-03-09 |
-| 2. Component Library | 2/5 | In Progress | - |
-| 3. Layout System | 0/3 | Not started | - |
+| 2. Component Library | 5/5 | Complete | 2026-03-09 |
+| 3. Layout System | 0/3 | Planned | - |
 | 4. State & API Layer | 0/3 | Not started | - |
 | 5. Console Feature | 0/6 | Not started | - |
 | 6. Pages & Accessibility | 0/4 | Not started | - |
@@ -155,3 +155,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 *Granularity: standard*
 *Total phases: 6*
 *Phase 1 planned: 2026-03-09*
+*Phase 3 planned: 2026-03-09*
