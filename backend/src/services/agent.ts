@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { config } from '../config/index.js';
 import { createChatModel } from '../utils/llm.js';
 import { logger } from '../utils/logger.js';
+import { redis } from '../utils/redis.js';
 
 export type AgentToolName = 'text-to-model-draft' | 'convert' | 'validate' | 'analyze' | 'code-check' | 'report';
 export type AgentRunMode = 'chat' | 'execute' | 'auto';
@@ -120,8 +121,7 @@ export interface AgentStreamChunk {
 export class AgentService {
   private readonly engineClient: AxiosInstance;
   private readonly llm: ChatOpenAI | null;
-  private static readonly draftStates = new Map<string, DraftState>();
-  private static readonly draftStateTtlMs = 30 * 60 * 1000;
+  private static readonly draftStateTtlSeconds = 30 * 60;
 
   constructor() {
     this.engineClient = axios.create({
@@ -404,7 +404,6 @@ export class AgentService {
 
   private async runInternal(params: AgentRunParams, traceId: string): Promise<AgentRunResult> {
     const startedAt = Date.now();
-    this.cleanupDraftStates();
 
     const runMode: AgentRunMode = params.mode || 'auto';
     if (runMode === 'chat') {
@@ -440,7 +439,7 @@ export class AgentService {
     const mode: 'rule-based' | 'llm-assisted' = this.llm ? 'llm-assisted' : 'rule-based';
 
     const sessionKey = params.conversationId?.trim();
-    const existingState = sessionKey ? AgentService.draftStates.get(sessionKey) : undefined;
+    const existingState = await this.getDraftState(sessionKey);
 
     let normalizedModel = modelInput;
     if (!normalizedModel) {
@@ -458,7 +457,7 @@ export class AgentService {
 
       if (!draft.model) {
         if (sessionKey && draft.stateToPersist) {
-          AgentService.draftStates.set(sessionKey, draft.stateToPersist);
+          await this.setDraftState(sessionKey, draft.stateToPersist);
         }
 
         const question = this.buildClarificationQuestion(draft.missingFields);
@@ -483,7 +482,7 @@ export class AgentService {
       }
 
       if (sessionKey) {
-        AgentService.draftStates.delete(sessionKey);
+        await this.clearDraftState(sessionKey);
       }
       normalizedModel = draft.model;
     }
@@ -1251,12 +1250,47 @@ export class AgentService {
     };
   }
 
-  private cleanupDraftStates(): void {
-    const now = Date.now();
-    for (const [key, state] of AgentService.draftStates.entries()) {
-      if (now - state.updatedAt > AgentService.draftStateTtlMs) {
-        AgentService.draftStates.delete(key);
+  private buildDraftStateKey(conversationId: string): string {
+    return `agent:draft-state:${conversationId}`;
+  }
+
+  private async getDraftState(conversationId: string | undefined): Promise<DraftState | undefined> {
+    if (!conversationId) {
+      return undefined;
+    }
+
+    try {
+      const raw = await redis.get(this.buildDraftStateKey(conversationId));
+      if (!raw) {
+        return undefined;
       }
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') {
+        return undefined;
+      }
+      return parsed as DraftState;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async setDraftState(conversationId: string, state: DraftState): Promise<void> {
+    try {
+      await redis.setex(
+        this.buildDraftStateKey(conversationId),
+        AgentService.draftStateTtlSeconds,
+        JSON.stringify(state),
+      );
+    } catch {
+      // Keep non-blocking behavior for draft persistence.
+    }
+  }
+
+  private async clearDraftState(conversationId: string): Promise<void> {
+    try {
+      await redis.del(this.buildDraftStateKey(conversationId));
+    } catch {
+      // Keep non-blocking behavior for draft cleanup.
     }
   }
 

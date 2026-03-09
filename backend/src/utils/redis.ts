@@ -70,6 +70,20 @@ export const redis = {
     }
   },
 
+  async del(key: string): Promise<number> {
+    memoryCache.delete(key);
+
+    if (!redisClient) {
+      return 1;
+    }
+
+    try {
+      return await redisClient.del(key);
+    } catch {
+      return 1;
+    }
+  },
+
   async ping(): Promise<'PONG'> {
     if (!redisClient) {
       return 'PONG';
