@@ -20,6 +20,8 @@ jobs:
   backend-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/structureclaw
 
     steps:
       - name: Checkout

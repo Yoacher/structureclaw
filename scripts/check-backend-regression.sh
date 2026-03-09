@@ -40,6 +40,10 @@ echo "==> Chat message routing contract"
 
 echo
 echo "==> Prisma schema validate"
+if [[ -z "${DATABASE_URL:-}" ]]; then
+  export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/structureclaw"
+  echo "[info] DATABASE_URL is not set; using fallback for prisma validate."
+fi
 npm run db:validate --prefix backend
 
 echo
