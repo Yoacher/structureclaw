@@ -132,8 +132,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: Home page rewrite
-- [ ] 06-02: Console page composition
+- [x] 06-01: Home page rewrite
+- [x] 06-02: Console page accessibility audit
 - [ ] 06-03: Keyboard navigation and focus management
 - [ ] 06-04: ARIA labels and semantic HTML audit
 
@@ -149,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Layout System | 3/3 | Complete | 2026-03-09 |
 | 4. State & API Layer | 3/3 | Complete    | 2026-03-09 |
 | 5. Console Feature | 6/7 | Complete    | 2026-03-09 |
-| 6. Pages & Accessibility | 0/4 | Not started | - |
+| 6. Pages & Accessibility | 2/4 | In progress | - |
 
 ---
 *Roadmap created: 2026-03-09*
