@@ -11,7 +11,7 @@ migration (new fields default to None / empty).
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -332,14 +332,14 @@ class StructureModelV2(BaseModel):
                 raise ValueError(
                     f"Element '{elem.id}' references unknown section '{elem.section}'"
                 )
-            if elem.story and story_ids and elem.story not in story_ids:
+            if elem.story and elem.story not in story_ids:
                 raise ValueError(
                     f"Element '{elem.id}' references unknown story '{elem.story}'"
                 )
 
         # Validate node → story references
         for node in self.nodes:
-            if node.story and story_ids and node.story not in story_ids:
+            if node.story and node.story not in story_ids:
                 raise ValueError(
                     f"Node '{node.id}' references unknown story '{node.story}'"
                 )

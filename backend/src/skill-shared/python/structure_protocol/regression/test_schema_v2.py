@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -30,7 +29,7 @@ from structure_protocol.structure_model_v2 import (
     StructureSystem,
     WindParams,
 )
-from structure_protocol.migrations import migrate_v1_to_v2
+from structure_protocol.migrations import migrate_structure_model_v1 as migrate_v1_to_v2
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 EXAMPLES_V2_DIR = Path(__file__).resolve().parent.parent / "examples_v2"
@@ -213,10 +212,10 @@ class TestMigration:
     def test_all_v1_examples_migrate(self):
         """Every existing V1 example should migrate cleanly to V2."""
         for fname in sorted(EXAMPLES_DIR.glob("model_*.json")):
-            if "model_13" in fname.name or "model_14" in fname.name:
-                continue  # These are already V2
             with open(fname, encoding="utf-8") as fh:
                 v1 = json.load(fh)
+            if v1.get("schema_version", "").startswith("2"):
+                continue
             v2 = migrate_v1_to_v2(v1)
             model = StructureModelV2(**v2)
             assert model.schema_version == "2.0.0", f"Migration failed for {fname.name}"
